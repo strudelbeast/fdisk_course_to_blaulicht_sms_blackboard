@@ -20,7 +20,7 @@ services:
     depends_on:
       - selenium-firefox
     env_file:
-      - .env
+      - stack.env
     environment:
       - SELENIUM_URL=http://selenium-firefox:4444/wd/hub
     restart: always
