@@ -1,0 +1,26 @@
+services:
+  selenium-firefox:
+    image: selenium/standalone-chrome:latest
+    container_name: selenium-firefox
+    shm_size: "2gb"
+    ports:
+      - "4444:4444"   # Selenium Grid WebDriver port
+      - "7900:7900"   # VNC viewer port (optional)
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  python-app:
+    build:
+      dockerfile: ./Dockerfile
+    container_name: python-selenium
+    depends_on:
+      - selenium-firefox
+    env_file:
+      - .env
+    environment:
+      - SELENIUM_URL=http://selenium-firefox:4444/wd/hub
+    restart: always

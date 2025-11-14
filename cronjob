@@ -1,0 +1,2 @@
+# Führe das Python-Script um 00:00 und 12:00 aus
+0 0,12 * * * python /app/__main__.py >> /var/log/cron.log 2>&1
