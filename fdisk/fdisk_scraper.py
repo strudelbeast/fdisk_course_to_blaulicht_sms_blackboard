@@ -11,7 +11,7 @@ from config import flags
 
 pd.set_option('mode.chained_assignment', None)
 
-selenium_url = os.getenv("SELENIUM_URL", "http://selenium-firefox:4444/wd/hub")
+selenium_url = os.getenv("SELENIUM_URL", "http://selenium-chrome:4444/wd/hub")
 print(f"Selenium url: {selenium_url}")
 
 def fetch_fdisk_table() -> Union[pd.DataFrame, None]:

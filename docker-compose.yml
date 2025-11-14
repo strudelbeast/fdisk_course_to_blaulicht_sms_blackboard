@@ -1,7 +1,9 @@
 services:
-  selenium-firefox:
+  selenium-chrome:
     image: selenium/standalone-chrome:latest
-    container_name: selenium-firefox
+    environment:
+      - TZ=Europe/Vienna
+    container_name: selenium-chrome
     shm_size: "2gb"
     ports:
       - "4444:4444"   # Selenium Grid WebDriver port
@@ -18,12 +20,10 @@ services:
       dockerfile: ./Dockerfile
     container_name: python-selenium
     depends_on:
-      - selenium-firefox
+      - selenium-chrome
     env_file:
       - stack.env
     environment:
-      - SELENIUM_URL=http://selenium-firefox:4444/wd/hub
+      - SELENIUM_URL=http://selenium-chrome:4444/wd/hub
+      - TZ=Europe/Vienna
     restart: always
-
-environment:
-  - TZ=Europe/Vienna
