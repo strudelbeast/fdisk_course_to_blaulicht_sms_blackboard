@@ -37,7 +37,8 @@ def dataframe_to_markdown(df: pd.DataFrame) -> str:
         columns[index] = '**' + value + '**'
     df.columns = columns
 
-    for _, row in df.iterrows():
+    newDf = pd.DataFrame(df)
+    for rowIndex, row in df.iterrows():
         format_chars = ''
         if row['**Teilnehmerstatus**'] == 'Teilnehmerliste':
             format_chars = '**'
@@ -47,13 +48,18 @@ def dataframe_to_markdown(df: pd.DataFrame) -> str:
                 row['**Teilnehmerstatus**'] == 'Abgelehnt vom System'):
             format_chars = '~~'
 
-        for index, value in row.iteritems():
-            row[index] = format_chars + value + format_chars
+        for index, value in row.items():
+            newRow = pd.Series(row)
+            newRow.loc[index] = format_chars + value + format_chars
+        newDf.loc[rowIndex] = newRow
 
+    df = newDf
     result = df.to_markdown(index=False, tablefmt='github')
     if result is not None:
         result += '\n<br/>\nUpdate '
         result += datetime.now().strftime("%d.%m.%Y %H:%M")
+
+    print(result)
 
     return result
 

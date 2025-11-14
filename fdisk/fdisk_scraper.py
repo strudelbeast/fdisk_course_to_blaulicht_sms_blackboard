@@ -1,49 +1,75 @@
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import WebDriverException
 from bs4 import BeautifulSoup
 import pandas as pd
 from typing import Union
-import os
+import os, time
 from datetime import date, datetime
 from config import flags
 
 pd.set_option('mode.chained_assignment', None)
 
+selenium_url = os.getenv("SELENIUM_URL", "http://selenium-firefox:4444/wd/hub")
+print(f"Selenium url: {selenium_url}")
 
 def fetch_fdisk_table() -> Union[pd.DataFrame, None]:
-    # configure the browser
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument('--disable-gpu')
-    options.add_argument('--log-level=3')
-    driver = webdriver.Firefox(executable_path='./geckodriver.exe', options=options)
-
-    df: pd.DataFrame
     try:
+        print("Starting Fdisk Fetch")
+
+        options = Options()
+        options.add_argument("--headless")
+
+        driver: webdriver.Remote = None
+        for i in range(30):
+            try:
+                driver = webdriver.Remote(
+                    command_executor=selenium_url,
+                    options=options,
+                )
+                break
+            except WebDriverException as e:
+                print(f"Waiting for Selenium... ({i+1}/30)")
+                time.sleep(2)
+        else:
+            raise Exception("Selenium server never became ready!")
+
+        fdisk_username = os.environ.get("FDISK_USERNAME")
+        fdisk_password = os.environ.get("FDISK_PASSWORD")
+        fdisk_instanz = os.environ.get("FDISK_INSTANZNUMMER")
+
+        print('Credentials read')
+        if (fdisk_username == None or fdisk_password == None or fdisk_instanz == None):
+            raise Exception("Fdisk credentials not provided")
+
+
+        df = None
         driver.get("https://app.fdisk.at/fdisk/module/vws/logins/logins.aspx")
 
         # Fill in login form
-        loginE = driver.find_element_by_id('login')
+        loginE = driver.find_element(By.ID,'login')
         loginE.clear()
-        loginE.send_keys(os.environ.get("FDISK_USERNAME"))
+        loginE.send_keys(fdisk_username)
 
-        passwordE = driver.find_element_by_id('password')
+        passwordE = driver.find_element(By.ID,'password')
         passwordE.clear()
-        passwordE.send_keys(os.environ.get("FDISK_PASSWORD"))
-        driver.find_element_by_id('Submit2').click()
+        passwordE.send_keys(fdisk_password)
+        driver.find_element(By.ID, 'Submit2').click()
 
         # Now Logged in and call site, which contains the table
-        driver.get(
-            f'https://app.fdisk.at/fdisk/module/kvw/karriere/AngemeldeteKurseLFKDOList.aspx?'
-            'instanzennummer_person={instanzennummer}'
-            '&ordnung=kursbeginn%2Ckursartenbez%2Czuname%2Cvorname'
-            '&orderType=ASC'
-            '&search=1'
-            '&anzeige_count=ALLE'.format(instanzennummer=os.environ.get("FDISK_INSTANZNUMMER")))
+        url = 'https://app.fdisk.at/fdisk/module/kvw/karriere/AngemeldeteKurseLFKDOList.aspx?' + \
+                f'instanzennummer_person={fdisk_instanz}' + \
+                '&ordnung=kursbeginn%2Ckursartenbez%2Czuname%2Cvorname' + \
+                '&orderType=ASC' + \
+                '&search=1' + \
+                '&anzeige_count=ALLE'
+        print(f'Table url: {url}')
+        
+        driver.get(url)
 
         # Scraping table
-
-        table_kurse = driver.find_element_by_xpath('/html/body/table[2]/tbody/tr[2]/td[1]')
+        table_kurse = driver.find_element(By.XPATH, '/html/body/table[2]/tbody/tr[2]/td[1]')
         soup = BeautifulSoup(table_kurse.get_attribute('innerHTML'), 'html.parser')
         table = soup.select("table")[0]
 
@@ -97,6 +123,7 @@ def fetch_fdisk_table() -> Union[pd.DataFrame, None]:
         print("There was an error while fetching data. The program didn't succeed!")
         print(ex)
     finally:
-        driver.close()
+        driver.quit()
 
+    print("Ended Fdisk Fetch")
     return df
