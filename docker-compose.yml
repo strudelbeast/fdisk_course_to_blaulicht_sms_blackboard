@@ -24,3 +24,6 @@ services:
     environment:
       - SELENIUM_URL=http://selenium-firefox:4444/wd/hub
     restart: always
+
+environment:
+  - TZ=Europe/Vienna
