@@ -9,7 +9,7 @@ from config import flags
 from datetime import datetime, timedelta
 
 # load environment variables
-load_dotenv()
+load_dotenv(dotenv_path="/etc/crontab.env")
 
 print('Loaded env - starting execution')
 

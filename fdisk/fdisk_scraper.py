@@ -11,17 +11,29 @@ from config import flags
 
 pd.set_option('mode.chained_assignment', None)
 
-selenium_url = os.getenv("SELENIUM_URL", "http://selenium-firefox:4444/wd/hub")
+selenium_url = os.getenv("SELENIUM_URL", "http://selenium-chrome:4444/wd/hub")
 print(f"Selenium url: {selenium_url}")
 
 def fetch_fdisk_table() -> Union[pd.DataFrame, None]:
+    df = None
     try:
         print("Starting Fdisk Fetch")
 
         options = Options()
-        options.add_argument("--headless")
+        options.add_argument("--headless=new")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
 
         driver: webdriver.Remote = None
+
+        fdisk_username = os.environ.get("FDISK_USERNAME")
+        fdisk_password = os.environ.get("FDISK_PASSWORD")
+        fdisk_instanz = os.environ.get("FDISK_INSTANZNUMMER")
+
+        if (fdisk_username == None or fdisk_password == None or fdisk_instanz == None):
+            raise Exception("Fdisk credentials not provided")
+        print('Credentials read')
+
         for i in range(30):
             try:
                 driver = webdriver.Remote(
@@ -35,17 +47,9 @@ def fetch_fdisk_table() -> Union[pd.DataFrame, None]:
         else:
             raise Exception("Selenium server never became ready!")
 
-        fdisk_username = os.environ.get("FDISK_USERNAME")
-        fdisk_password = os.environ.get("FDISK_PASSWORD")
-        fdisk_instanz = os.environ.get("FDISK_INSTANZNUMMER")
 
-        print('Credentials read')
-        if (fdisk_username == None or fdisk_password == None or fdisk_instanz == None):
-            raise Exception("Fdisk credentials not provided")
-
-
-        df = None
         driver.get("https://app.fdisk.at/fdisk/module/vws/logins/logins.aspx")
+        driver.implicitly_wait(30)
 
         # Fill in login form
         loginE = driver.find_element(By.ID,'login')

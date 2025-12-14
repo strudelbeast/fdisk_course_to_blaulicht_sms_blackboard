@@ -1,0 +1,28 @@
+services:
+  selenium-chrome:
+    image: selenium/standalone-chrome:latest
+    environment:
+      - TZ=Europe/Vienna
+    container_name: selenium-chrome
+    shm_size: "2gb"
+    ports:
+      - "4444:4444"   # Selenium Grid WebDriver port
+      - "7900:7900"   # VNC viewer port (optional)
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  python-app:
+    build:
+      dockerfile: ./Dockerfile
+    container_name: scraper
+    depends_on:
+      - selenium-chrome
+    env_file:
+      - stack.env
+    environment:
+      - SELENIUM_URL=http://selenium-chrome:4444/wd/hub
+      - TZ=Europe/Vienna
